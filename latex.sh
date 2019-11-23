@@ -10,9 +10,11 @@ if [ $# -eq 0 ]
 		echo "	init : initialize latex project"
 		echo "	add : add chapter/section/subsection"
 		echo "	del : delete chapter/section/subsection"
+		echo "  md : parse markdown input (requires pandoc)"
 		exit 1
 fi
 
+# returns absolute path to root of project
 function get_root() {
 	# get root directory of project ( always git repo )
 	root="$(git rev-parse --show-toplevel 2> /dev/null || true)"
@@ -26,6 +28,7 @@ function get_root() {
 	echo "$root"
 }
 
+# returns depth of pwd in project folder
 function get_depth() {
 	oldpwd="$(pwd)"
 	count=0
@@ -38,6 +41,7 @@ function get_depth() {
 	echo "$count"
 }
 
+# clear up files after compiling latex
 trap clear_files SIGINT
 function clear_files() {
 	echo "clearing up"
@@ -45,6 +49,7 @@ function clear_files() {
 	latexmk -c -cd root.tex
 }
 
+# main command case switch
 case "$1" in
 	add)
 				# check if chapter/section/subsection exists
@@ -127,7 +132,18 @@ case "$1" in
 	activate)
 		  PATH="$PATH:$(pwd)" bash
 			;;
-
+	md)
+			if [ $# -eq 3 ]
+				then
+					exec 4<"$2"
+					exec 0<&4
+			fi
+			pandoc -f markdown -t latex	<&0 >> "${@: -1}"
+			if [ $# -eq 3 ]
+				then
+					exec 4<&-
+				fi
+			;;
 	*)
 			echo "unknown command"
 			exit 1
