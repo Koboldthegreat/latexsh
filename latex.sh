@@ -26,6 +26,18 @@ function get_root() {
 	echo "$root"
 }
 
+function get_depth() {
+	oldpwd="$(pwd)"
+	count=0
+	until ls -d */ | grep "^main/$" -q
+	do
+	  cd ..
+	  count=$(($count + 1))
+	done
+	cd "$oldpwd"
+	echo "$count"
+}
+
 trap clear_files SIGINT
 function clear_files() {
 	echo "clearing up"
@@ -43,11 +55,7 @@ case "$1" in
 				fi
 
 				# determine type
-				root="$(get_root)"
-				depth="$(pwd)"
-				depth="$(echo ${depth#"$root"} | grep -o / | wc -l || true)"
-
-				case "$depth" in
+				case "$(get_depth)" in
 				0)
 					type='chapter'
 					;;
@@ -63,7 +71,7 @@ case "$1" in
 					;;
 				esac
 
-				echo "adding $type"
+				echo "adding $type '$2'"
 
 				# create chapter file structure
 				mkdir "$2" "$2/img"
